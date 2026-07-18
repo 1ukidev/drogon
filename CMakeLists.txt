@@ -25,7 +25,7 @@ CMAKE_DEPENDENT_OPTION(USE_SPDLOG "Allow using the spdlog logging library" OFF "
 
 set(DROGON_MAJOR_VERSION 1)
 set(DROGON_MINOR_VERSION 9)
-set(DROGON_PATCH_VERSION 10)
+set(DROGON_PATCH_VERSION 13)
 set(DROGON_VERSION
     ${DROGON_MAJOR_VERSION}.${DROGON_MINOR_VERSION}.${DROGON_PATCH_VERSION})
 set(DROGON_VERSION_STRING "${DROGON_VERSION}")
@@ -134,6 +134,8 @@ if (WIN32)
         PRIVATE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party/mman-win32>)
 endif (WIN32)
 
+add_library(Drogon::Drogon ALIAS ${PROJECT_NAME})
+
 if(USE_SUBMODULE)
 add_subdirectory(trantor)
 target_link_libraries(${PROJECT_NAME} PUBLIC trantor)
@@ -185,10 +187,19 @@ if(TARGET std::filesystem)
   endif()
 endif()
 
-
 # jsoncpp
-find_package(Jsoncpp REQUIRED)
-target_link_libraries(${PROJECT_NAME} PUBLIC Jsoncpp_lib)
+find_package(jsoncpp QUIET CONFIG)
+if (jsoncpp_FOUND)
+  message(STATUS "jsoncpp found by config")
+  if (USE_STATIC_LIBS_ONLY)
+    target_link_libraries(${PROJECT_NAME} PUBLIC jsoncpp_static)
+  else()
+    target_link_libraries(${PROJECT_NAME} PUBLIC jsoncpp_lib)
+  endif()
+else()
+  find_package(Jsoncpp REQUIRED MODULE)
+  target_link_libraries(${PROJECT_NAME} PUBLIC Jsoncpp_lib)
+endif()
 list(APPEND INCLUDE_DIRS_FOR_DYNAMIC_VIEW ${JSONCPP_INCLUDE_DIRS})
 
 # yamlcpp
@@ -329,6 +340,7 @@ set(private_headers
     lib/src/ListenerManager.h
     lib/src/PluginsManager.h
     lib/src/SessionManager.h
+    lib/src/utils/ParsingUtils.h
     lib/src/SpinLock.h
     lib/src/StaticFileRouter.h
     lib/src/TaskTimeoutFlag.h
@@ -524,6 +536,15 @@ if (BUILD_EXAMPLES)
 endif (BUILD_EXAMPLES)
 
 if (BUILD_CTL)
+    if (CMAKE_CROSSCOMPILING)
+        find_program(HOST_DROGON_CTL _drogon_ctl)
+        if (NOT HOST_DROGON_CTL)
+            message(FATAL_ERROR "_drogon_ctl not found on host system")
+        endif()
+        set(DROGON_CTL "${HOST_DROGON_CTL}")
+    else (CMAKE_CROSSCOMPILING)
+        set(DROGON_CTL "$<TARGET_FILE:_drogon_ctl>")
+    endif (CMAKE_CROSSCOMPILING)
     add_subdirectory(drogon_ctl)
 endif (BUILD_CTL)
 

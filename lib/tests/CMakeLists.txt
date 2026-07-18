@@ -43,6 +43,8 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC" AND BUILD_SHARED_LIBS)
 else()
   set(UNITTEST_SOURCES ${UNITTEST_SOURCES} ../src/HttpFileImpl.cc
                        unittests/HttpFileTest.cc
+                       unittests/HttpMethodTest.cc
+                       unittests/HttpRequestForwardCacheBodyTest.cc
                        unittests/WebsocketResponseTest.cc)
 endif()
 
@@ -62,6 +64,7 @@ if (BUILD_CTL)
       integration_test/server/CustomHeaderFilter.cc
       integration_test/server/DoNothingPlugin.cc
       integration_test/server/ForwardCtrl.cc
+      integration_test/server/HttpClientOutstandingRequests.cc
       integration_test/server/JsonTestController.cc
       integration_test/server/ListParaCtl.cc
       integration_test/server/PipeliningTest.cc
